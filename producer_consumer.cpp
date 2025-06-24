@@ -85,7 +85,6 @@ void *consumidor(void *arg)
         {
             pthread_mutex_unlock(&mutex_contador);
             pthread_mutex_unlock(&mutex_buffer);
-            sem_post(&llenos); // Libera para otros consumidores
             break;
         }
 
