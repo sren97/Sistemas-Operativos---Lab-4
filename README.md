@@ -40,19 +40,19 @@ ejecutar individualmente
 A continuación se muestran los resultados de cada ejecución, evidenciando el correcto funcionamiento de los mecanismos de sincronización implementados.
 
 ### Cola Thread-Safe
-![alt text](image.png)
-![alt text](image-1.png)
+![alt text](images/image.png)
+![alt text](images/image-1.png)
 
 La ejecución de la cola thread-safe demuestra cómo las variables de condición optimizan la sincronización de los estados, permitiendo a los hilos bloquearse y despertarse según la disponibilidad de espacio o elementos en la cola.
 
 ### Productor-Consumidor
-![alt text](image-2.png)
+![alt text](images/image-2.png)
 
 El resultado del programa productor-consumidor ilustra cómo los semáforos coordinan la producción y consumo de elementos en un buffer, implementado el manejo de la terminación cuando los productores han completado su trabajo.
 
 ### Filósofos Comensales
-![alt text](image-3.png)
-![alt text](image-4.png)
-![alt text](image-5.png)
+![alt text](images/image-3.png)
+![alt text](images/image-4.png)
+![alt text](images/image-5.png)
 
 La ejecución del problema de los filósofos comensales muestra cómo ambas soluciones implementadas evitan el deadlock, permitiendo a todos los filósofos alternar entre pensar y comer sin que ninguno quede permanentemente bloqueado.
