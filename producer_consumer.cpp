@@ -182,6 +182,12 @@ int main()
 
     printf("\nTodos los productores terminaron. Esperando consumidores...\n");
 
+    // Libera los semáforos llenos para que los consumidores puedan continuar
+    for (int i = 0; i < NUM_CONSUMIDORES; i++)
+    {
+        sem_post(&llenos); 
+    }
+
     // Esperar a que los consumidores terminen
     for (int i = 0; i < NUM_CONSUMIDORES; i++)
     {
