@@ -89,7 +89,7 @@ void *consumidor(void *arg)
         }
 
         int elemento = buffer[salida];
-        printf("Consumidor %d consumió %d de posición %d\n", id, elemento, salida);
+        buffer[salida] = 0;  // Limpia la celda
         salida = (salida + 1) % TAM_BUFFER;
 
         total_consumidos++;
