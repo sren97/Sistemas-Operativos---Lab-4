@@ -45,19 +45,33 @@ ejecutar individualmente (go)
 A continuación se muestran los resultados de cada ejecución en c++, evidenciando el correcto funcionamiento de los mecanismos de sincronización implementados.
 
 ### Cola Thread-Safe
+## En C++:
 ![alt text](images/image.png)
 ![alt text](images/image-1.png)
+
+## En GO:
+![alt text](images/imagego.png)
+![alt text](images/image-1go.png)
 
 La ejecución de la cola thread-safe demuestra cómo las variables de condición optimizan la sincronización de los estados, permitiendo a los hilos bloquearse y despertarse según la disponibilidad de espacio o elementos en la cola.
 
 ### Productor-Consumidor
+## En C++:
 ![alt text](images/image-2.png)
+
+## En GO:
+![alt text](images/image-2go.png)
 
 El resultado del programa productor-consumidor ilustra cómo los semáforos coordinan la producción y consumo de elementos en un buffer, implementado el manejo de la terminación cuando los productores han completado su trabajo.
 
-### Filósofos Comensales
+### Filósofos Comiendo
+# En C++:
 ![alt text](images/image-3.png)
 ![alt text](images/image-4.png)
 ![alt text](images/image-5.png)
 
-La ejecución del problema de los filósofos comensales muestra cómo ambas soluciones implementadas evitan el deadlock, permitiendo a todos los filósofos alternar entre pensar y comer sin que ninguno quede permanentemente bloqueado.
+## En GO:
+![alt text](images/image-3go.png)
+![alt text](images/image-4go.png)
+![alt text](images/image-5go.png)
+La ejecución del problema de los filósofos comiendo muestra cómo ambas soluciones implementadas evitan el deadlock, permitiendo a todos los filósofos alternar entre pensar y comer sin que ninguno quede permanentemente bloqueado.
