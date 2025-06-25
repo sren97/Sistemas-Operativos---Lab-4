@@ -1,173 +1,177 @@
 package main
 
 import (
-    "fmt"
-    "math/rand"
-    "sync"
-    "time"
+	"fmt"
+	"math/rand"
+	"sync"
+	"time"
 )
 
 const (
-    bufferSize       = 10
-    numProducers     = 2
-    numConsumers     = 3
-    itemsPerProducer = 8
+	TAM_BUFFER              = 10
+	NUM_PRODUCTORES         = 2
+	NUM_CONSUMIDORES        = 3
+	ELEMENTOS_POR_PRODUCTOR = 8
 )
 
 var (
-    buffer        [bufferSize]int
-    inputIndex    = 0
-    outputIndex   = 0
-    emptySlots    = make(chan struct{}, bufferSize) // semáforo de espacios vacíos
-    fullSlots     = make(chan struct{}, bufferSize) // semáforo de espacios llenos
-    bufferMutex   sync.Mutex
-    countMutex    sync.Mutex
-    totalProduced = 0
-    totalConsumed = 0
+	buffer           [TAM_BUFFER]int
+	entrada          = 0
+	salida           = 0
+	vacios           = make(chan struct{}, TAM_BUFFER) // semáforo de espacios vacíos
+	llenos           = make(chan struct{}, TAM_BUFFER) // semáforo de espacios llenos
+	mutex_buffer     sync.Mutex
+	mutex_contador   sync.Mutex
+	total_producidos = 0
+	total_consumidos = 0
 )
 
-// produceItem simula la producción de un ítem
-func produceItem() int {
-    return rand.Intn(1000)
+// Genera un nuevo elemento (simulado)
+func producir_elemento() int {
+	return rand.Intn(1000)
 }
 
-// consumeItem simula el consumo de un ítem
-func consumeItem(item int) {
-    fmt.Printf("Consumed: %d\n", item)
-    time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+// Procesa un elemento (simulado)
+func consumir_elemento(elemento int) {
+	fmt.Printf("Consumido: %d\n", elemento)
+	time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 }
 
-// producer coloca items en el buffer usando emptySlots/fullSlots
-func producer(id int, wg *sync.WaitGroup) {
-    defer wg.Done()
-    for i := 0; i < itemsPerProducer; i++ {
-        item := produceItem()
+// Función del hilo productor
+func productor(id int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for i := 0; i < ELEMENTOS_POR_PRODUCTOR; i++ {
+		elemento := producir_elemento()
 
-        // Espera un token de ranura vacía
-        <-emptySlots
+		// Espera un token de ranura vacía
+		<-vacios
 
-        // Sección crítica: insertar en buffer
-        bufferMutex.Lock()
-        buffer[inputIndex] = item
-        fmt.Printf("Producer %d produced %d at position %d\n", id, item, inputIndex)
-        inputIndex = (inputIndex + 1) % bufferSize
-        bufferMutex.Unlock()
+		// Sección crítica: insertar en buffer
+		mutex_buffer.Lock()
+		buffer[entrada] = elemento
+		fmt.Printf("Productor %d produjo %d en posición %d\n", id, elemento, entrada)
+		entrada = (entrada + 1) % TAM_BUFFER
+		mutex_buffer.Unlock()
 
-        // Incrementa contador de producidos
-        countMutex.Lock()
-        totalProduced++
-        countMutex.Unlock()
+		// Incrementa contador de producidos
+		mutex_contador.Lock()
+		total_producidos++
+		mutex_contador.Unlock()
 
-        // Señala ranura llena
-        fullSlots <- struct{}{}
+		// Señala ranura llena
+		llenos <- struct{}{}
 
-        time.Sleep(time.Duration(rand.Intn(300)) * time.Millisecond)
-    }
-    fmt.Printf("Producer %d finished\n", id)
+		time.Sleep(time.Duration(rand.Intn(300)) * time.Millisecond)
+	}
+	fmt.Printf("Productor %d finalizó\n", id)
 }
 
-// consumer toma items del buffer o, si ya se consumió todo, sale sin quedarse bloqueado
-func consumer(id int, wg *sync.WaitGroup, totalToProduce int) {
-    defer wg.Done()
+// Función del hilo consumidor
+func consumidor(id int, wg *sync.WaitGroup, total_a_producir int) {
+	defer wg.Done()
+	consumidos_local := 0
 
-    for {
-        // Bloquea hasta que haya un fullSlot disponible
-        <-fullSlots
+	for {
+		// Espera si no hay elementos
+		<-llenos
 
-        // Comprueba si ya se han consumido todos los ítems
-        countMutex.Lock()
-        if totalConsumed >= totalToProduce {
-            countMutex.Unlock()
-            return // sale sin procesar ningún valor residual
-        }
-        countMutex.Unlock()
+		// Comprueba si ya se han consumido todos los ítems
+		mutex_contador.Lock()
+		if total_consumidos >= total_a_producir {
+			mutex_contador.Unlock()
+			break
+		}
 
-        // Sección crítica: extraer del buffer
-        bufferMutex.Lock()
-        item := buffer[outputIndex]
-        buffer[outputIndex] = 0 // opcional: limpiar celda
-        outputIndex = (outputIndex + 1) % bufferSize
-        bufferMutex.Unlock()
+		// Sección crítica: extraer del buffer
+		mutex_buffer.Lock()
+		elemento := buffer[salida]
+		buffer[salida] = 0 // Limpia la celda
+		salida = (salida + 1) % TAM_BUFFER
 
-        // Actualiza contador de consumidos
-        countMutex.Lock()
-        totalConsumed++
-        countMutex.Unlock()
+		total_consumidos++
+		consumidos_local++
+		mutex_contador.Unlock()
 
-        // Señala ranura vacía
-        emptySlots <- struct{}{}
+		mutex_buffer.Unlock()
 
-        // Procesa el ítem
-        consumeItem(item)
-    }
+		// Libera un espacio
+		vacios <- struct{}{}
+
+		// Procesa el ítem
+		consumir_elemento(elemento)
+	}
+
+	fmt.Printf("Consumidor %d finalizó (consumió %d elementos)\n", id, consumidos_local)
 }
 
-// displayBuffer imprime el estado final
-func displayBuffer() {
-    bufferMutex.Lock()
-    defer bufferMutex.Unlock()
+// Muestra el estado del buffer
+func mostrar_estado_buffer() {
+	mutex_buffer.Lock()
+	defer mutex_buffer.Unlock()
 
-    fmt.Println("\n=== Buffer State ===")
-    fmt.Printf("Empty slots: %d, full slots: %d\n", bufferSize-len(fullSlots), len(fullSlots))
-    fmt.Printf("Total produced: %d, consumed: %d\n", totalProduced, totalConsumed)
-    fmt.Print("Content: [")
-    for i := 0; i < bufferSize; i++ {
-        if i == inputIndex {
-            fmt.Print("IN->")
-        }
-        if i == outputIndex {
-            fmt.Print("OUT->")
-        }
-        fmt.Print(buffer[i])
-        if i < bufferSize-1 {
-            fmt.Print(", ")
-        }
-    }
-    fmt.Println("]")
-    fmt.Println("===================\n")
+	fmt.Println("\n=== Estado del Buffer ===")
+	fmt.Printf("Espacios vacíos: %d, llenos: %d\n", len(vacios), len(llenos))
+	fmt.Printf("Total producidos: %d, consumidos: %d\n", total_producidos, total_consumidos)
+	fmt.Print("Contenido: [")
+	for i := 0; i < TAM_BUFFER; i++ {
+		if i == entrada {
+			fmt.Print("ENT->")
+		}
+		if i == salida {
+			fmt.Print("SAL->")
+		}
+		fmt.Print(buffer[i])
+		if i < TAM_BUFFER-1 {
+			fmt.Print(", ")
+		}
+	}
+	fmt.Println("]")
+	fmt.Println("=========================\n")
 }
 
 func main() {
-    rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
 
-    totalToProduce := numProducers * itemsPerProducer
-    var wgProducers, wgConsumers sync.WaitGroup
+	total_a_producir := NUM_PRODUCTORES * ELEMENTOS_POR_PRODUCTOR
+	var wg_productores, wg_consumidores sync.WaitGroup
 
-    fmt.Println("Producer-Consumer Simulation")
-    fmt.Printf("Buffer size: %d\n", bufferSize)
-    fmt.Printf("Producers: %d (each produces %d)\n", numProducers, itemsPerProducer)
-    fmt.Printf("Consumers: %d\n", numConsumers)
-    fmt.Printf("Total to produce: %d items\n\n", totalToProduce)
+	fmt.Println("Simulación Productores-Consumidores")
+	fmt.Printf("Tamaño del buffer: %d\n", TAM_BUFFER)
+	fmt.Printf("Productores: %d (cada uno produce %d)\n", NUM_PRODUCTORES, ELEMENTOS_POR_PRODUCTOR)
+	fmt.Printf("Consumidores: %d\n", NUM_CONSUMIDORES)
+	fmt.Printf("Total a producir: %d elementos\n\n", total_a_producir)
 
-    // Inicializa semáforos de emptySlots
-    for i := 0; i < bufferSize; i++ {
-        emptySlots <- struct{}{}
-    }
+	// Inicializa semáforos de vacios
+	for i := 0; i < TAM_BUFFER; i++ {
+		vacios <- struct{}{}
+	}
 
-    // Arranca productores
-    wgProducers.Add(numProducers)
-    for i := 0; i < numProducers; i++ {
-        go producer(i+1, &wgProducers)
-    }
+	// Arranca productores
+	wg_productores.Add(NUM_PRODUCTORES)
+	for i := 0; i < NUM_PRODUCTORES; i++ {
+		go productor(i+1, &wg_productores)
+	}
 
-    // Arranca consumidores
-    wgConsumers.Add(numConsumers)
-    for i := 0; i < numConsumers; i++ {
-        go consumer(i+1, &wgConsumers, totalToProduce)
-    }
+	// Arranca consumidores
+	wg_consumidores.Add(NUM_CONSUMIDORES)
+	for i := 0; i < NUM_CONSUMIDORES; i++ {
+		go consumidor(i+1, &wg_consumidores, total_a_producir)
+	}
 
-    // Espera a que todos los productores terminen
-    wgProducers.Wait()
+	// Espera a que todos los productores terminen
+	wg_productores.Wait()
 
-    // Luego de producir todo, inyecta tokens adicionales en fullSlots
-    // para despertar a consumidores que pudieran estar bloqueados.
-    for i := 0; i < numConsumers; i++ {
-        fullSlots <- struct{}{}
-    }
+	fmt.Println("\nTodos los productores terminaron. Esperando consumidores...")
 
-    // Ahora sí, espera a que todos los consumidores terminen
-    wgConsumers.Wait()
+	// Luego de producir todo, inyecta tokens adicionales en llenos
+	// para despertar a consumidores que pudieran estar bloqueados.
+	for i := 0; i < NUM_CONSUMIDORES; i++ {
+		llenos <- struct{}{}
+	}
 
-    fmt.Println("\nAll threads finished.")
-    displayBuffer()
+	// Ahora sí, espera a que todos los consumidores terminen
+	wg_consumidores.Wait()
+
+	fmt.Println("\nTodos los hilos terminaron.")
+	mostrar_estado_buffer()
 }
