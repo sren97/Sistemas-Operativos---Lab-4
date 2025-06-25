@@ -223,7 +223,7 @@ func ejecutar_semaforo() {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	fmt.Println("Problema de los Filósofos Comensales")
+	fmt.Println("Problema de los Filósofos Comiendo")
 	fmt.Printf("Filósofos: %d | Cada uno comerá 3 veces\n", NUM_FILOSOFOS)
 
 	ejecutar_asimetrico()

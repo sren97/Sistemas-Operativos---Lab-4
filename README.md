@@ -32,12 +32,17 @@ g++ -o dining_philosophers dining_philosophers.cpp -pthread
 
 ## Ejecución y Resultados
 
-ejecutar individualmente
+ejecutar individualmente (c++)
 `./queue`
 `./producer_consumer`
 `./dining_philosophers`
 
-A continuación se muestran los resultados de cada ejecución, evidenciando el correcto funcionamiento de los mecanismos de sincronización implementados.
+ejecutar individualmente (go)
+`go run queue.go`
+`go run producer_consumer.go`
+`go run dining_philosophers.go`
+
+A continuación se muestran los resultados de cada ejecución en c++, evidenciando el correcto funcionamiento de los mecanismos de sincronización implementados.
 
 ### Cola Thread-Safe
 ![alt text](images/image.png)
